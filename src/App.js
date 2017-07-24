@@ -2,8 +2,9 @@ import React, { Component } from 'react';
 import { gql, graphql, compose } from 'react-apollo';
 import { Route, Link } from 'react-router-dom';
 import Form from 'react-jsonschema-form';
+import update from 'immutability-helper';
 
-const schema = {
+const baseSchema = {
     title: 'Create Game',
     type: 'object',
     required: ['victory', 'difficulty', 'roles'],
@@ -22,7 +23,8 @@ const schema = {
                 type: 'string',
                 enum: [], // filled in at runtime
                 enumNames: [] // filled in at runtime
-            }
+            },
+            uniqueItems: true
         },
         notes: {
             type: 'string',
@@ -142,14 +144,24 @@ const Create = compose(
     if (loading) {
         return null;
     }
-    allRoles.forEach(({ id, name }) => {
-        console.log(id, name);
-        schema.properties.roles.items.enum.push(id);
-        schema.properties.roles.items.enumNames.push(name);
+    const schema = update(baseSchema, {
+        properties: {
+            roles: {
+                items: {
+                    enum: { $push: allRoles.map(({ id }) => id) },
+                    enumNames: { $push: allRoles.map(({ name }) => name) }
+                }
+            }
+        }
     });
     return (
         <Layout>
-            <Form schema={schema} uiSchema={uiSchema} />
+            <Form
+                schema={schema}
+                uiSchema={uiSchema}
+                onSubmit={({ formData }) => console.log('submit', formData)}
+                noHtml5Validate={true}
+            />
         </Layout>
     );
 });
