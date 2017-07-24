@@ -1,14 +1,17 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import registerServiceWorker from './registerServiceWorker';
-
+import { HashRouter as Router } from 'react-router-dom';
 import {
     ApolloProvider,
     ApolloClient,
     createNetworkInterface
 } from 'react-apollo';
+
+import 'bootstrap/dist/css/bootstrap.css';
+
+import App from './App';
+import registerServiceWorker from './registerServiceWorker';
+import './index.css';
 
 const client = new ApolloClient({
     networkInterface: createNetworkInterface({
@@ -18,7 +21,9 @@ const client = new ApolloClient({
 
 ReactDOM.render(
     <ApolloProvider client={client}>
-        <App />
+        <Router>
+            <App />
+        </Router>
     </ApolloProvider>,
     document.getElementById('root')
 );
