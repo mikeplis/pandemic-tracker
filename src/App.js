@@ -1,13 +1,44 @@
 import React, { Component } from 'react';
 import { gql, graphql, compose } from 'react-apollo';
 import { Route, Link } from 'react-router-dom';
-import {
-    Button,
-    FormGroup,
-    ControlLabel,
-    FormControl,
-    Checkbox
-} from 'react-bootstrap';
+import Form from 'react-jsonschema-form';
+
+const schema = {
+    title: 'Create Game',
+    type: 'object',
+    required: ['victory', 'difficulty', 'roles'],
+    properties: {
+        victory: { type: 'boolean', title: 'Victory?', default: false },
+        difficulty: {
+            type: 'string',
+            title: 'Difficulty',
+            enum: ['Introductory', 'Normal', 'Heroic'],
+            default: 'Normal'
+        },
+        roles: {
+            type: 'array',
+            title: 'Roles',
+            items: {
+                type: 'string',
+                enum: [], // filled in at runtime
+                enumNames: [] // filled in at runtime
+            }
+        },
+        notes: {
+            type: 'string',
+            title: 'Notes'
+        }
+    }
+};
+
+const uiSchema = {
+    roles: {
+        'ui:widget': 'checkboxes'
+    },
+    notes: {
+        'ui:widget': 'textarea'
+    }
+};
 
 const allGames = gql`
     {
@@ -111,69 +142,14 @@ const Create = compose(
     if (loading) {
         return null;
     }
-    console.log(this);
+    allRoles.forEach(({ id, name }) => {
+        console.log(id, name);
+        schema.properties.roles.items.enum.push(id);
+        schema.properties.roles.items.enumNames.push(name);
+    });
     return (
         <Layout>
-            <h1>Create</h1>
-            <form>
-                <FormGroup>
-                    <Checkbox inputRef={ref => (this.victoryRef = ref)}>
-                        Victory
-                    </Checkbox>
-                </FormGroup>
-                <FormGroup>
-                    <ControlLabel>Difficulty</ControlLabel>
-                    <FormControl
-                        inputRef={ref => (this.difficultyRef = ref)}
-                        componentClass="select"
-                    >
-                        {['Introductory', 'Normal', 'Heroic'].map(name =>
-                            <option key={name} value={name}>
-                                {name}
-                            </option>
-                        )}
-                    </FormControl>
-                </FormGroup>
-                <FormGroup>
-                    <ControlLabel>Roles</ControlLabel>
-                    <FormControl
-                        inputRef={ref => (this.rolesRef = ref)}
-                        componentClass="select"
-                        multiple
-                    >
-                        {allRoles &&
-                            allRoles.map(({ id, name }) =>
-                                <option key={id} value={id}>
-                                    {name}
-                                </option>
-                            )}
-                    </FormControl>
-                </FormGroup>
-                <FormGroup>
-                    <ControlLabel>Notes</ControlLabel>
-                    <FormControl
-                        type="text"
-                        placeholder="Notes"
-                        inputRef={ref => (this.notesRef = ref)}
-                    />
-                </FormGroup>
-                <Button
-                    onClick={() =>
-                        mutate({
-                            variables: {
-                                didWin: true,
-                                difficulty: 'Introductory'
-                            },
-                            refetchQueries: [
-                                {
-                                    query: allGames
-                                }
-                            ]
-                        })}
-                >
-                    Create Game
-                </Button>
-            </form>
+            <Form schema={schema} uiSchema={uiSchema} />
         </Layout>
     );
 });
