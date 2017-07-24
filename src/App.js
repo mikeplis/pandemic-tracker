@@ -3,9 +3,8 @@ import { gql, graphql, compose } from 'react-apollo';
 import { Route } from 'react-router-dom';
 import Form from 'react-jsonschema-form';
 import update from 'immutability-helper';
-import ReactTable from 'react-table';
 import { LinkContainer } from 'react-router-bootstrap';
-import { Navbar, Nav, NavItem } from 'react-bootstrap';
+import { Table, Navbar, Nav, NavItem } from 'react-bootstrap';
 
 const baseSchema = {
     title: 'Create Game',
@@ -97,82 +96,40 @@ const Layout = ({ children }) =>
         {children}
     </div>;
 
-const columns = [
-    { Header: 'Result', id: 'result', accessor: d => (d.didWin ? 'Victory' : 'Default') },
-    { Header: 'Difficulty', accessor: 'difficulty' },
-    { Header: 'Date', id: 'date', accessor: d => new Date(d.createdAt).toDateString() },
-    { Header: 'Roles', id: 'roles', accessor: d => d.roles.map(role => role.name).join(',') },
-    { Header: 'Notes', accessor: 'notes' }
-];
-
-const TableComponent = ({ children, className, ...rest }) =>
-    // <table className={'rt-table table ' + className} {...rest}>
-    <table className={'table ' + className} {...rest}>
-        {children}
-    </table>;
-
-const TheadComponent = ({ children, className, ...rest }) =>
-    // <thead className={'rt-thead ' + className} {...rest}>
-    <thead className={className} {...rest}>
-        {children}
-    </thead>;
-
-const TbodyComponent = ({ children, className, ...rest }) =>
-    // <tbody className={'rt-tbody ' + className} {...rest}>
-    <tbody className={className} {...rest}>
-        {children}
-    </tbody>;
-
-const TrGroupComponent = ({ children, className, ...rest }) => {
-    const firstChild = React.Children.toArray(children)[0];
-    return React.cloneElement(firstChild);
-};
-
-const TrComponent = ({ children, className, ...rest }) =>
-    // <tr className={'rt-tr ' + className} {...rest}>
-    <tr className={className} {...rest}>
-        {children}
-    </tr>;
-
-const ThComponent = ({ toggleSort, className, children, ...rest }) => {
-    return (
-        <th
-            // className={'rt-th ' + className}
-            className={className}
-            onClick={e => {
-                toggleSort && toggleSort(e);
-            }}
-            {...rest}
-        >
-            {children}
-        </th>
-    );
-};
-const TdComponent = ({ children, className, ...rest }) =>
-    // <td className={'rt-td ' + className} {...rest}>
-    <td className={className} {...rest}>
-        {children}
-    </td>;
-
 const Home = graphql(allGames)(({ data: { allGames } }) => {
     if (!allGames) {
         return null;
     }
     return (
         <Layout>
-            <ReactTable
-                data={allGames}
-                columns={columns}
-                minRows={0}
-                showPagination={false}
-                TableComponent={TableComponent}
-                TheadComponent={TheadComponent}
-                TbodyComponent={TbodyComponent}
-                TrComponent={TrComponent}
-                TdComponent={TdComponent}
-                TrGroupComponent={TrGroupComponent}
-                ThComponent={ThComponent}
-            />
+            <Table condensed>
+                <thead>
+                    <tr>
+                        <th>Difficulty</th>
+                        <th>Date</th>
+                        <th>Roles</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {allGames.map(({ didWin, difficulty, createdAt, roles, notes }) =>
+                        <tr className={didWin ? 'success' : 'danger'}>
+                            <td>
+                                {difficulty}
+                            </td>
+                            <td>
+                                {new Date(createdAt).toDateString()}
+                            </td>
+                            <td>
+                                {roles.map(role => role.name).join(',')}
+                            </td>
+                            <td>
+                                {notes}
+                            </td>
+                        </tr>
+                    )}
+                </tbody>
+            </Table>
         </Layout>
     );
 });

@@ -4,8 +4,8 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import { ApolloProvider, ApolloClient, createNetworkInterface } from 'react-apollo';
 
 import 'bootstrap/dist/css/bootstrap.css';
-import 'bootswatch/simplex/bootstrap.css';
-import 'react-table/react-table.css';
+import 'bootswatch/sandstone/bootstrap.css';
+// import 'react-table/react-table.css';
 
 import App from './App';
 import registerServiceWorker from './registerServiceWorker';
