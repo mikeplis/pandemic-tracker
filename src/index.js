@@ -8,6 +8,7 @@ import {
 } from 'react-apollo';
 
 import 'bootstrap/dist/css/bootstrap.css';
+import 'react-table/react-table.css'
 
 import App from './App';
 import registerServiceWorker from './registerServiceWorker';

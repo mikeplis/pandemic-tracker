@@ -3,20 +3,21 @@ import { gql, graphql, compose } from 'react-apollo';
 import { Route, Link } from 'react-router-dom';
 import Form from 'react-jsonschema-form';
 import update from 'immutability-helper';
+import ReactTable from 'react-table';
 
 const baseSchema = {
     title: 'Create Game',
     type: 'object',
-    required: ['victory', 'difficulty', 'roles'],
+    required: ['didWin', 'difficulty', 'roleIds'],
     properties: {
-        victory: { type: 'boolean', title: 'Victory?', default: false },
+        didWin: { type: 'boolean', title: 'Victory?', default: false },
         difficulty: {
             type: 'string',
             title: 'Difficulty',
             enum: ['Introductory', 'Normal', 'Heroic'],
             default: 'Normal'
         },
-        roles: {
+        roleIds: {
             type: 'array',
             title: 'Roles',
             items: {
@@ -34,7 +35,7 @@ const baseSchema = {
 };
 
 const uiSchema = {
-    roles: {
+    roleIds: {
         'ui:widget': 'checkboxes'
     },
     notes: {
@@ -53,21 +54,14 @@ const allGames = gql`
                 id
                 name
             }
+            notes
         }
     }
 `;
 
 const createGame = gql`
-    mutation createGame(
-        $didWin: Boolean!
-        $difficulty: GAME_DIFFICULTY!
-        $roleIds: [ID!]
-    ) {
-        createGame(
-            didWin: $didWin
-            difficulty: $difficulty
-            rolesIds: $roleIds
-        ) {
+    mutation createGame($didWin: Boolean!, $difficulty: GAME_DIFFICULTY!, $roleIds: [ID!], $notes: String) {
+        createGame(didWin: $didWin, difficulty: $difficulty, rolesIds: $roleIds, notes: $notes) {
             id
         }
     }
@@ -99,54 +93,32 @@ const Layout = ({ children }) =>
         {children}
     </div>;
 
+const columns = [
+    { Header: 'Result', id: 'result', accessor: d => (d.didWin ? 'Victory' : 'Default') },
+    { Header: 'Difficulty', accessor: 'difficulty' },
+    { Header: 'Date', id: 'date', accessor: d => new Date(d.createdAt).toDateString() },
+    { Header: 'Roles', id: 'roles', accessor: d => d.roles.map(role => role.name).join(',') },
+    { Header: 'Notes', accessor: 'notes' }
+];
+
 const Home = graphql(allGames)(({ data: { allGames } }) => {
     if (!allGames) {
         return null;
     }
     return (
         <Layout>
-            <ul>
-                {allGames.map(
-                    ({ id, didWin, difficulty, createdAt, roles }) => {
-                        return (
-                            <li key={id}>
-                                <ul>
-                                    <li>{`Result - ${didWin
-                                        ? 'Victory'
-                                        : 'Defeat'}`}</li>
-                                    <li>{`Difficulty - ${difficulty}`}</li>
-                                    <li>{`Date - ${createdAt}`}</li>
-                                    <li>
-                                        <ul>
-                                            {roles.map(({ id, name }) => {
-                                                return (
-                                                    <li key={id}>
-                                                        {name}
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                    </li>
-                                </ul>
-                            </li>
-                        );
-                    }
-                )}
-            </ul>
+            <ReactTable data={allGames} columns={columns} pageSize={10} showPagination={false} />
         </Layout>
     );
 });
 
-const Create = compose(
-    graphql(createGame),
-    graphql(allRoles)
-)(({ mutate, data: { allRoles, loading } }) => {
+const Create = compose(graphql(createGame), graphql(allRoles))(({ mutate, data: { allRoles, loading } }) => {
     if (loading) {
         return null;
     }
     const schema = update(baseSchema, {
         properties: {
-            roles: {
+            roleIds: {
                 items: {
                     enum: { $push: allRoles.map(({ id }) => id) },
                     enumNames: { $push: allRoles.map(({ name }) => name) }
@@ -159,7 +131,12 @@ const Create = compose(
             <Form
                 schema={schema}
                 uiSchema={uiSchema}
-                onSubmit={({ formData }) => console.log('submit', formData)}
+                onSubmit={({ formData }) => {
+                    mutate({
+                        variables: formData, // this works because formData fields match variable names in GraphQL query
+                        refetchQueries: [{ query: allGames }]
+                    });
+                }}
                 noHtml5Validate={true}
             />
         </Layout>
