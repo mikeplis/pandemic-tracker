@@ -1,10 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { ApolloProvider, ApolloClient, createNetworkInterface } from 'react-apollo';
+import {
+    ApolloProvider,
+    ApolloClient,
+    createNetworkInterface
+} from 'react-apollo';
 
 import 'bootstrap/dist/css/bootstrap.css';
-import 'bootswatch/sandstone/bootstrap.css';
+import 'bootswatch/flatly/bootstrap.css';
 // import 'react-table/react-table.css';
 
 import App from './App';

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { gql, graphql, compose } from 'react-apollo';
+import { gql, graphql, compose, withApollo } from 'react-apollo';
 import { Route } from 'react-router-dom';
 import Form from 'react-jsonschema-form';
 import update from 'immutability-helper';
@@ -46,7 +46,7 @@ const uiSchema = {
 
 const allGames = gql`
     {
-        allGames(orderBy: createdAt_ASC) {
+        allGames(orderBy: createdAt_DESC) {
             id
             didWin
             difficulty
@@ -61,8 +61,18 @@ const allGames = gql`
 `;
 
 const createGame = gql`
-    mutation createGame($didWin: Boolean!, $difficulty: GAME_DIFFICULTY!, $roleIds: [ID!], $notes: String) {
-        createGame(didWin: $didWin, difficulty: $difficulty, rolesIds: $roleIds, notes: $notes) {
+    mutation createGame(
+        $didWin: Boolean!
+        $difficulty: GAME_DIFFICULTY!
+        $roleIds: [ID!]
+        $notes: String
+    ) {
+        createGame(
+            didWin: $didWin
+            difficulty: $difficulty
+            rolesIds: $roleIds
+            notes: $notes
+        ) {
             id
         }
     }
@@ -112,21 +122,25 @@ const Home = graphql(allGames)(({ data: { allGames } }) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {allGames.map(({ didWin, difficulty, createdAt, roles, notes }) =>
-                        <tr className={didWin ? 'success' : 'danger'}>
-                            <td>
-                                {difficulty}
-                            </td>
-                            <td>
-                                {new Date(createdAt).toDateString()}
-                            </td>
-                            <td>
-                                {roles.map(role => role.name).join(',')}
-                            </td>
-                            <td>
-                                {notes}
-                            </td>
-                        </tr>
+                    {allGames.map(
+                        ({ id, didWin, difficulty, createdAt, roles, notes }) =>
+                            <tr
+                                key={id}
+                                className={didWin ? 'success' : 'danger'}
+                            >
+                                <td>
+                                    {difficulty}
+                                </td>
+                                <td>
+                                    {new Date(createdAt).toDateString()}
+                                </td>
+                                <td>
+                                    {roles.map(role => role.name).join(',')}
+                                </td>
+                                <td>
+                                    {notes}
+                                </td>
+                            </tr>
                     )}
                 </tbody>
             </Table>
@@ -134,7 +148,10 @@ const Home = graphql(allGames)(({ data: { allGames } }) => {
     );
 });
 
-const Create = compose(graphql(createGame), graphql(allRoles))(({ mutate, data: { allRoles, loading } }) => {
+const Create = compose(
+    graphql(createGame),
+    graphql(allRoles)
+)(({ mutate, data: { allRoles, loading } }) => {
     if (loading) {
         return null;
     }
@@ -167,6 +184,9 @@ const Create = compose(graphql(createGame), graphql(allRoles))(({ mutate, data: 
 
 class App extends Component {
     render() {
+        const { client } = this.props;
+        client.query({ query: allGames });
+        client.query({ query: allRoles });
         return (
             <div className="container">
                 <Route exact path="/" component={Home} />
@@ -176,4 +196,4 @@ class App extends Component {
     }
 }
 
-export default graphql(allGames)(App);
+export default withApollo(App);
