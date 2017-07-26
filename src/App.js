@@ -40,7 +40,8 @@ const uiSchema = {
         'ui:widget': 'checkboxes'
     },
     notes: {
-        'ui:widget': 'textarea'
+        'ui:widget': 'textarea',
+        'ui:placeholder': 'Notes'
     }
 };
 
@@ -148,19 +149,13 @@ const Home = graphql(allGames)(({ data: { allGames } }) => {
     );
 });
 
-const Create = compose(
-    graphql(createGame),
-    graphql(allRoles)
-)(({ mutate, data: { allRoles, loading } }) => {
-    if (loading) {
-        return null;
-    }
+const Create = compose(graphql(createGame), graphql(allRoles))(({ mutate, data: { allRoles } }) => {
     const schema = update(baseSchema, {
         properties: {
             roleIds: {
                 items: {
-                    enum: { $push: allRoles.map(({ id }) => id) },
-                    enumNames: { $push: allRoles.map(({ name }) => name) }
+                    enum: { $push: !allRoles ? [] : allRoles.map(({ id }) => id) },
+                    enumNames: { $push: !allRoles ? [] : allRoles.map(({ name }) => name) }
                 }
             }
         }
