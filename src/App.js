@@ -6,9 +6,7 @@ import update from 'immutability-helper';
 import { LinkContainer } from 'react-router-bootstrap';
 import { Table, Navbar, Nav, NavItem } from 'react-bootstrap';
 import { VictoryPie, VictoryTheme } from 'victory';
-import flow from 'lodash/fp/flow';
-import groupBy from 'lodash/fp/groupBy';
-import mapValues from 'lodash/fp/mapValues';
+import { flow, groupBy, map, entries } from 'lodash/fp';
 
 const baseSchema = {
     title: 'Create Game',
@@ -203,7 +201,8 @@ const Login = () =>
 const Stats = graphql(allGames)(({ data: { allGames } }) => {
     const pieData = flow(
         groupBy('difficulty'),
-        mapValues(games => games.length)
+        entries,
+        map(([difficulty, games]) => ({ x: difficulty, y: games.length }))
     )(allGames);
     return (
         <Layout>
@@ -226,11 +225,13 @@ const Stats = graphql(allGames)(({ data: { allGames } }) => {
                         </div>
                     </div>
                     <div>
-                        <h3>Pie Chart</h3>
-                        <div style={{ width: 300 }}>
+                        <h3>Games By Difficulty</h3>
+                        <div>
                             <VictoryPie
                                 theme={VictoryTheme.material}
                                 data={pieData}
+                                colorScale="cool"
+                                width={300}
                             />
                         </div>
                     </div>
@@ -242,6 +243,7 @@ const Stats = graphql(allGames)(({ data: { allGames } }) => {
 class App extends Component {
     render() {
         const { client } = this.props;
+        // prefetch some queries
         client.query({ query: allGames });
         client.query({ query: allRoles });
         return (
