@@ -5,6 +5,7 @@ import Form from 'react-jsonschema-form';
 import update from 'immutability-helper';
 import { LinkContainer } from 'react-router-bootstrap';
 import { Table, Navbar, Nav, NavItem } from 'react-bootstrap';
+import { VictoryPie, VictoryTheme } from 'victory';
 
 const baseSchema = {
     title: 'Create Game',
@@ -88,7 +89,6 @@ const allRoles = gql`
     }
 `;
 
-// TODO: need additional library to get react-router and react-bootstrap to play nice
 const MyNav = () =>
     <Navbar>
         <Nav>
@@ -97,6 +97,14 @@ const MyNav = () =>
             </LinkContainer>
             <LinkContainer to="/create">
                 <NavItem>Create</NavItem>
+            </LinkContainer>
+            <LinkContainer to="/stats">
+                <NavItem>Stats</NavItem>
+            </LinkContainer>
+        </Nav>
+        <Nav pullRight style={{ marginRight: 15 }}>
+            <LinkContainer to="/login">
+                <NavItem>Login</NavItem>
             </LinkContainer>
         </Nav>
     </Navbar>;
@@ -149,13 +157,20 @@ const Home = graphql(allGames)(({ data: { allGames } }) => {
     );
 });
 
-const Create = compose(graphql(createGame), graphql(allRoles))(({ mutate, data: { allRoles } }) => {
+const Create = compose(
+    graphql(createGame),
+    graphql(allRoles)
+)(({ mutate, data: { allRoles } }) => {
     const schema = update(baseSchema, {
         properties: {
             roleIds: {
                 items: {
-                    enum: { $push: !allRoles ? [] : allRoles.map(({ id }) => id) },
-                    enumNames: { $push: !allRoles ? [] : allRoles.map(({ name }) => name) }
+                    enum: {
+                        $push: !allRoles ? [] : allRoles.map(({ id }) => id)
+                    },
+                    enumNames: {
+                        $push: !allRoles ? [] : allRoles.map(({ name }) => name)
+                    }
                 }
             }
         }
@@ -177,6 +192,43 @@ const Create = compose(graphql(createGame), graphql(allRoles))(({ mutate, data: 
     );
 });
 
+const Login = () =>
+    <Layout>
+        <div>Login</div>
+    </Layout>;
+
+const Stats = graphql(allGames)(({ data: { allGames } }) => {
+    return (
+        <Layout>
+            {allGames &&
+                <div>
+                    <div>
+                        <h3>Number of games</h3>
+                        <div>
+                            {allGames.length}
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Win rate</h3>
+                        <div>
+                            {allGames.reduce(
+                                (wins, { didWin }) =>
+                                    didWin ? wins + 1 : wins,
+                                0
+                            ) / allGames.length}
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Pie Chart</h3>
+                        <div style={{ width: 300 }}>
+                            <VictoryPie theme={VictoryTheme.material} />
+                        </div>
+                    </div>
+                </div>}
+        </Layout>
+    );
+});
+
 class App extends Component {
     render() {
         const { client } = this.props;
@@ -186,6 +238,8 @@ class App extends Component {
             <div className="container">
                 <Route exact path="/" component={Home} />
                 <Route exact path="/create" component={Create} />
+                <Route exact path="/login" component={Login} />
+                <Route exact path="/stats" component={Stats} />
             </div>
         );
     }
