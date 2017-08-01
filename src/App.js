@@ -105,7 +105,7 @@ const MyNav = () =>
                 <NavItem>Stats</NavItem>
             </LinkContainer>
         </Nav>
-        <Nav pullRight style={{ marginRight: 15 }}>
+        <Nav pullRight>
             <LinkContainer to="/login">
                 <NavItem>Login</NavItem>
             </LinkContainer>
@@ -245,7 +245,7 @@ class App extends Component {
         client.query({ query: allGames });
         client.query({ query: allRoles });
         return (
-            <div className="container">
+            <div className="container-fluid">
                 <Route exact path="/" component={Home} />
                 <Route exact path="/create" component={Create} />
                 <Route exact path="/login" component={Login} />
