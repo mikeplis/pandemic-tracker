@@ -6,6 +6,7 @@
     "bootstrap": "^3.3.7",
     "bootswatch": "^3.3.7",
     "immutability-helper": "^2.3.0",
+    "lodash": "^4.17.4",
     "react": "^15.6.1",
     "react-apollo": "^1.4.8",
     "react-bootstrap": "^0.31.1",

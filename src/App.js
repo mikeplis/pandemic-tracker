@@ -6,6 +6,9 @@ import update from 'immutability-helper';
 import { LinkContainer } from 'react-router-bootstrap';
 import { Table, Navbar, Nav, NavItem } from 'react-bootstrap';
 import { VictoryPie, VictoryTheme } from 'victory';
+import flow from 'lodash/fp/flow';
+import groupBy from 'lodash/fp/groupBy';
+import mapValues from 'lodash/fp/mapValues';
 
 const baseSchema = {
     title: 'Create Game',
@@ -198,6 +201,10 @@ const Login = () =>
     </Layout>;
 
 const Stats = graphql(allGames)(({ data: { allGames } }) => {
+    const pieData = flow(
+        groupBy('difficulty'),
+        mapValues(games => games.length)
+    )(allGames);
     return (
         <Layout>
             {allGames &&
@@ -221,7 +228,10 @@ const Stats = graphql(allGames)(({ data: { allGames } }) => {
                     <div>
                         <h3>Pie Chart</h3>
                         <div style={{ width: 300 }}>
-                            <VictoryPie theme={VictoryTheme.material} />
+                            <VictoryPie
+                                theme={VictoryTheme.material}
+                                data={pieData}
+                            />
                         </div>
                     </div>
                 </div>}
