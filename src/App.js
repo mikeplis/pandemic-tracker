@@ -5,8 +5,17 @@ import Form from 'react-jsonschema-form';
 import update from 'immutability-helper';
 import { LinkContainer } from 'react-router-bootstrap';
 import { Table, Navbar, Nav, NavItem } from 'react-bootstrap';
-import { VictoryPie, VictoryTheme } from 'victory';
-import { flow, groupBy, map, entries } from 'lodash/fp';
+import { VictoryPie, VictoryTheme, VictoryBar, VictoryChart } from 'victory';
+import {
+    flow,
+    groupBy,
+    map,
+    entries,
+    sortBy,
+    flatMap,
+    words,
+    join
+} from 'lodash/fp';
 
 const baseSchema = {
     title: 'Create Game',
@@ -193,16 +202,88 @@ const Create = compose(
     );
 });
 
-const Login = () =>
+const loginSchema = {
+    type: 'object',
+    required: ['email', 'password'],
+    properties: {
+        email: {
+            title: 'Email',
+            type: 'string'
+        },
+        password: {
+            title: 'Password',
+            type: 'string'
+        }
+    }
+};
+
+const loginUiSchema = {
+    email: {
+        'ui:widget': 'email'
+    },
+    password: {
+        'ui:widget': 'password'
+    }
+};
+
+const signinUser = gql`
+    mutation signinUser($email: String!, $password: String!) {
+        signinUser(email: { email: $email, password: $password }) {
+            token
+        }
+    }
+`;
+
+const Login = graphql(signinUser)(({ mutate }) =>
     <Layout>
-        <div>Login</div>
-    </Layout>;
+        <Form
+            onSubmit={({ formData }) =>
+                mutate({ variables: formData })
+                    .then(({ data: { signinUser: { token } } }) =>
+                        localStorage.setItem('pandemicToken', token)
+                    )
+                    .catch(error => console.log('error', error))}
+            schema={loginSchema}
+            uiSchema={loginUiSchema}
+        />
+    </Layout>
+);
 
 const Stats = graphql(allGames)(({ data: { allGames } }) => {
-    const pieData = flow(
+    const winRate =
+        allGames &&
+        allGames.reduce((wins, { didWin }) => (didWin ? wins + 1 : wins), 0) /
+            allGames.length;
+    const gamesByDifficultyData = flow(
         groupBy('difficulty'),
         entries,
         map(([difficulty, games]) => ({ x: difficulty, y: games.length }))
+    )(allGames);
+    const winRateByDifficultyData = flow(
+        groupBy('difficulty'),
+        entries,
+        sortBy(([difficulty]) =>
+            ['Introductory', 'Normal', 'Heroic'].indexOf(difficulty)
+        ),
+        map(([difficulty, games]) => ({
+            x: difficulty,
+            y:
+                games.reduce(
+                    (wins, { didWin }) => (didWin ? wins + 1 : wins),
+                    0
+                ) / games.length
+        }))
+    )(allGames);
+    const gamesByRoleData = flow(
+        flatMap(game => map(role => [role.name, game])(game.roles)),
+        groupBy(pair => pair[0]), // groupBy role name
+        entries,
+        sortBy(([roleName]) => roleName),
+        // map(([roleName, games]) => ({ x: roleName, y: games.length })) // NOTE: this is the same function as in gamesByDifficultyData
+        map(([roleName, games]) => ({
+            x: flow(words, map(role => role[0]), join(''))(roleName),
+            y: games.length
+        })) // I shouldn't have to format 'x' like that, but I couldn't figure out how to do it in Victory
     )(allGames);
     return (
         <Layout>
@@ -217,22 +298,45 @@ const Stats = graphql(allGames)(({ data: { allGames } }) => {
                     <div>
                         <h3>Win rate</h3>
                         <div>
-                            {allGames.reduce(
-                                (wins, { didWin }) =>
-                                    didWin ? wins + 1 : wins,
-                                0
-                            ) / allGames.length}
+                            {winRate.toFixed(2) * 100 + '%'}
                         </div>
                     </div>
                     <div>
                         <h3>Games By Difficulty</h3>
-                        <div>
+                        <div style={{ width: 300 }}>
                             <VictoryPie
                                 theme={VictoryTheme.material}
-                                data={pieData}
+                                data={gamesByDifficultyData}
                                 colorScale="cool"
-                                width={300}
                             />
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Win rate by difficulty</h3>
+                        <div style={{ width: 300 }}>
+                            <VictoryChart
+                                domainPadding={30}
+                                theme={VictoryTheme.material}
+                            >
+                                <VictoryBar
+                                    theme={VictoryTheme.material}
+                                    data={winRateByDifficultyData}
+                                />
+                            </VictoryChart>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Games by role</h3>
+                        <div style={{ width: 300 }}>
+                            <VictoryChart
+                                domainPadding={10}
+                                theme={VictoryTheme.material}
+                            >
+                                <VictoryBar
+                                    theme={VictoryTheme.material}
+                                    data={gamesByRoleData}
+                                />
+                            </VictoryChart>
                         </div>
                     </div>
                 </div>}
