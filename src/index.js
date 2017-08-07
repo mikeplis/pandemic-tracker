@@ -30,7 +30,6 @@ networkInterface.use([
             req.options.headers.authorization = token
                 ? `Bearer ${token}`
                 : null;
-            console.log(token, req.options.headers);
             next();
         }
     }
