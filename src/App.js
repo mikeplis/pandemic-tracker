@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { gql, graphql, compose, withApollo } from 'react-apollo';
-import { Route } from 'react-router-dom';
+import { Route, Redirect } from 'react-router-dom';
 import Form from 'react-jsonschema-form';
 import update from 'immutability-helper';
 import { LinkContainer } from 'react-router-bootstrap';
@@ -112,11 +112,11 @@ const MyNav = () =>
                 <NavItem>Stats</NavItem>
             </LinkContainer>
         </Nav>
-        <Nav pullRight>
+        {/* <Nav pullRight>
             <LinkContainer to="/login">
                 <NavItem>Login</NavItem>
             </LinkContainer>
-        </Nav>
+        </Nav> */}
     </Navbar>;
 
 const Layout = ({ children }) =>
@@ -344,6 +344,20 @@ const Stats = graphql(allGames)(({ data: { allGames } }) => {
     );
 });
 
+const PrivateRoute = ({ component: Component, ...rest }) =>
+    <Route
+        {...rest}
+        render={props =>
+            localStorage.getItem('pandemicToken')
+                ? <Component {...props} />
+                : <Redirect
+                      to={{
+                          pathname: '/login',
+                          state: { from: props.location }
+                      }}
+                  />}
+    />;
+
 class App extends Component {
     render() {
         const { client } = this.props;
@@ -352,10 +366,10 @@ class App extends Component {
         client.query({ query: allRoles });
         return (
             <div className="container-fluid">
-                <Route exact path="/" component={Home} />
-                <Route exact path="/create" component={Create} />
-                <Route exact path="/login" component={Login} />
-                <Route exact path="/stats" component={Stats} />
+                <PrivateRoute exact path="/" component={Home} />
+                <PrivateRoute path="/create" component={Create} />
+                <Route path="/login" component={Login} />
+                <PrivateRoute path="/stats" component={Stats} />
             </div>
         );
     }
